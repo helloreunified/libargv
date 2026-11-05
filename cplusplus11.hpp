@@ -1,3 +1,6 @@
+#ifndef libargv_libargv_libargv
+#define libargv_libargv_libargv
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -114,3 +117,5 @@ class libargv {
             return ret;
         }
 };
+
+#endif
