@@ -94,7 +94,7 @@ class libargv {
         std::vector<std::string> strvect;
 
         void found_hyphen(bool& surpress_invalid, std::string& text) {
-            if (surpress_invalid == false) return;
+            if (surpress_invalid) return;
             std::fprintf(stderr, "[libargv] WARNING: found '-' with is_clustered == true. Faulty flag: '%s'\n", text.c_str());
         }
 
