@@ -7,8 +7,8 @@ just include it like a normal file
 every flag actually requires a value and the library may read incorrectly on incorrect user inputs
 a flag is implicitly pushed without setting a value when it precedes another flag  
 for a positional argument, it tries to push onto the previous token first if there's no `-` or `--` beforehand and the previous token is a flag. if it can't push to any flag, then it sits on its own (still accept comma-seperated tokenizing)  
-default arg_t value: { chain_t tokens = {}; bool is_flag = true; bool boolean = true }  
-(case-insensitive) values considered as booleans: 0, (integer != 0), no, yes, n, y
+default arg_t value: `{ chain_t tokens = {}; bool is_flag = true; bool boolean = true }`  
+(case-insensitive) values considered as booleans: `0`, `(integer != 0)`, `no`, `yes`, `n`, `y`
 
 # examples
 in commandline: 
