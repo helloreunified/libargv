@@ -82,7 +82,7 @@ class libargv {
                             if (strvect[i][x] == '-')
                                 found_hyphen(surpress_invalid, strvect[i]);
                             std::string flag_str = "-" + std::string (1, strvect[i][x]);
-                            argvect.emplace_back(argtok(flag_str), true);
+                            hold.text.push_back(flag_str);
                         }
                         continue;
                     }

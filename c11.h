@@ -16,8 +16,8 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef libargv_libargv
-#define libargv_libargv
+#ifndef LIBARGV_C_H
+#define LIBARGV_C_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -147,10 +147,16 @@ static void libargv_init(libargv_parser* parser, int argc, const char** argv,
                         libargv_found_hyphen(&temp_sup, curr);
                     }
                     char flag_str[3] = {'-', curr[x], '\0'};
-                    arg_t* arg = malloc(sizeof(arg_t));
-                    arg->text = libargv_argtok(flag_str);
-                    arg->is_flag = true;
-                    libargv_vec_push(&parser->argvect, arg);
+                    if (!hold) {
+                        hold = malloc(sizeof(arg_t));
+                        libargv_vec_init(&hold->text, 2);
+                        hold->is_flag = true;
+                    }
+                    vec_t tokens = libargv_argtok(flag_str);
+                    for (size_t t = 0; t < tokens.size; t++) {
+                        libargv_vec_push(&hold->text, tokens.data[t]);
+                    }
+                    libargv_vec_free(&tokens);
                 }
                 continue;
             }
