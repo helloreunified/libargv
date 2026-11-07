@@ -20,7 +20,7 @@ in commandline:
 #include <iostream>
 #include "cplusplus11.hpp"
 
-int main(int argc, const char** argv) {
+sign main(int, const char** argv) {
     libargv::alias_t aliases = {
         {"port", 'p'},
         {"mem", 'm'}
