@@ -16,8 +16,8 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef LIBARGV_C_H
-#define LIBARGV_C_H
+#ifndef libargv_libargv
+#define libargv_libargv
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,6 +53,7 @@ static void libargv_vec_free(vec_t* v) {
 typedef struct {
     vec_t text;
     bool is_flag;
+    bool boolean;
 } arg_t;
 
 typedef struct {
@@ -66,7 +67,7 @@ typedef struct {
 
 static void libargv_found_hyphen(bool* surpress_invalid, const char* text) {
     if (*surpress_invalid == false) return;
-    fprintf(stderr, "[libargv] WARNING; found '-' with is_clustered == true. This is probably an user error/ wrong CI command; or encountering non-standard flag styles like -memory or -disk-drive. Clustered flags may look like -xvf, meaning -x -v -f. You should set surpress_invalid = true for production builds. Faulty flag: '%s'\n", text);
+    fprintf(stderr, "[libargv] WARNING; found '-' with is_clustered == true. Faulty flag: '%s'\n", text);
 }
 
 static vec_t libargv_argtok(const char* user_str) {
@@ -96,11 +97,48 @@ static char libargv_alias_find(const alias_t* user, size_t user_count, const cha
     return '\0';
 }
 
+static bool libargv_booleval(arg_t* hold, const char* thing) {
+    char buf[256];
+    size_t len = strlen(thing);
+    if (len >= sizeof(buf)) len = sizeof(buf) - 1;
+    for (size_t i = 0; i < len; i++) {
+        char c = thing[i];
+        if (c >= 'A' && c <= 'Z') c += 32;
+        buf[i] = c;
+    }
+    buf[len] = '\0';
+
+    if (strcmp(buf, "no") == 0 || strcmp(buf, "n") == 0) {
+        hold->boolean = false;
+        return true;
+    }
+    if (strcmp(buf, "yes") == 0 || strcmp(buf, "y") == 0) {
+        hold->boolean = true;
+        return true;
+    }
+
+    bool all_0s = true, is_int = true;
+    for (size_t i = 0; i < len; i++) {
+        if (buf[i] != '0') all_0s = false;
+        if (buf[i] < '0' || buf[i] > '9') is_int = false;
+    }
+    if (all_0s) {
+        hold->boolean = false;
+        return true;
+    }
+    if (is_int) {
+        hold->boolean = true;
+        return true;
+    }
+    return false;
+}
+
 static void libargv_init(libargv_parser* parser, int argc, const char** argv, 
                          bool surpress_invalid, bool is_clustered, 
                          const alias_t* user, size_t user_count) {
     libargv_vec_init(&parser->argvect, 4);
 
+    bool pure_positional = false;
     arg_t* hold = NULL;
 
     for (int i = 1; i < argc; i++) {
@@ -108,13 +146,19 @@ static void libargv_init(libargv_parser* parser, int argc, const char** argv,
         size_t curr_len = strlen(curr);
         if (curr_len < 1) continue;
 
-        if (curr[0] != '-') {
+        if (pure_positional || curr[0] != '-') {
             if (!hold) {
                 arg_t* arg = malloc(sizeof(arg_t));
                 arg->text = libargv_argtok(curr);
                 arg->is_flag = false;
+                arg->boolean = true;
                 libargv_vec_push(&parser->argvect, arg);
             } else {
+                if (libargv_booleval(hold, curr)) {
+                    libargv_vec_push(&parser->argvect, hold);
+                    hold = NULL;
+                    continue;
+                }
                 vec_t tokens = libargv_argtok(curr);
                 for (size_t t = 0; t < tokens.size; t++) {
                     libargv_vec_push(&hold->text, tokens.data[t]);
@@ -135,6 +179,7 @@ static void libargv_init(libargv_parser* parser, int argc, const char** argv,
             arg_t* arg = malloc(sizeof(arg_t));
             arg->text = libargv_argtok(curr);
             arg->is_flag = false;
+            arg->boolean = true;
             libargv_vec_push(&parser->argvect, arg);
             continue;
         }
@@ -151,12 +196,17 @@ static void libargv_init(libargv_parser* parser, int argc, const char** argv,
                         hold = malloc(sizeof(arg_t));
                         libargv_vec_init(&hold->text, 2);
                         hold->is_flag = true;
+                        hold->boolean = true;
                     }
                     vec_t tokens = libargv_argtok(flag_str);
                     for (size_t t = 0; t < tokens.size; t++) {
                         libargv_vec_push(&hold->text, tokens.data[t]);
                     }
                     libargv_vec_free(&tokens);
+                }
+                if (hold) {
+                    libargv_vec_push(&parser->argvect, hold);
+                    hold = NULL;
                 }
                 continue;
             }
@@ -165,6 +215,7 @@ static void libargv_init(libargv_parser* parser, int argc, const char** argv,
                 hold = malloc(sizeof(arg_t));
                 libargv_vec_init(&hold->text, 2);
                 hold->is_flag = true;
+                hold->boolean = true;
             }
             const char* name = curr + 2;
             char alias_val = libargv_alias_find(user, user_count, name);
@@ -179,6 +230,7 @@ static void libargv_init(libargv_parser* parser, int argc, const char** argv,
                 hold = malloc(sizeof(arg_t));
                 libargv_vec_init(&hold->text, 2);
                 hold->is_flag = true;
+                hold->boolean = true;
             }
             const char* name = curr + 1;
             char alias_val = libargv_alias_find(user, user_count, name);

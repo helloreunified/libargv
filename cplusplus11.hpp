@@ -33,6 +33,7 @@ class libargv {
         struct arg_t {
             chain_t text;
             bool is_flag = true;
+            bool boolean = true;
 
             arg_t() = default;
             arg_t(chain_t _t, bool _i)
@@ -46,15 +47,19 @@ class libargv {
         void init(const char**& argv, bool surpress_invalid = false, bool is_clustered = true, alias_t user = {}) {
             argvect.clear();
             argvstr(argv);
+            bool pure_positional = false;
             arg_t hold;
             for (size_t i = 1; i < strvect.size(); i++) {
                 // low quality argv injection prevention
                 if (strvect[i].size() < 1) continue;
 
-                if (strvect[i].size() >= 1 && strvect[i][0] != '-') {
+                if (pure_positional || strvect[i][0] != '-') {
                     if (hold.is_empty()) // is a positional
                         argvect.emplace_back(argtok(strvect[i]), false);
                     else { // be after a flag
+                    	// is a boolean value
+						if (booleval(hold, strvect[i])) continue;
+                    	
                         chain_t tokens = argtok(strvect[i]);
                         hold.text.insert(hold.text.end(), tokens.begin(), tokens.end());
 
@@ -120,6 +125,35 @@ class libargv {
             strvect.clear();
             for (int i = 0; argv[i] != 0; i++)
                 strvect.push_back(argv[i]);
+        }
+
+       	bool booleval(arg_t& hold, std::string thing) {
+			for (size_t i = 0; i < thing.size(); i++)
+				if (thing[i] >= 'A' && thing[i] <= 'Z')
+					thing[i] += 32;
+			
+			if (thing == "no" || thing == "n") {
+				hold.boolean = false;
+				return true; }
+			if (thing == "yes" || thing == "y") {
+				hold.boolean = true;
+				return true; }
+
+			bool all_0s = true, is_int = true;
+           	for (size_t i = 0; i < thing.size(); i++) {
+           		if (thing[i] != '0')
+           			all_0s = false;
+           		if (thing[i] < '0' || thing[i] > '9')
+           			is_int = false;
+           	}
+           	if (all_0s) {
+           		hold.boolean = false;
+           		return true; }
+           	if (is_int) {
+           		hold.boolean = true;
+           		return true; }
+           		
+           	return false;
         }
         
         chain_t argtok(std::string& user) {
