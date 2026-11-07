@@ -48,7 +48,8 @@ int main(int argc, const char** argv) {
     }
 
     return 0;
-}```
+}
+```
 
 ```c
 #include <stdio.h>
@@ -91,4 +92,5 @@ signed main(int argc, const char** argv) {
     // prevent memory leaks
     libargv_free(&parser);
     return 0;
-}```
+}
+```
