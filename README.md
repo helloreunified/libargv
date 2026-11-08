@@ -8,30 +8,30 @@ every flag actually requires a value and the library may read incorrectly on inc
 a flag is implicitly pushed without setting a value when it precedes another flag  
 for a positional argument, it tries to push onto the previous token first if there's no `-` or `--` beforehand and the previous token is a flag. if it can't push to any flag, then it sits on its own (still accept comma-seperated tokenizing)  
 default arg_t value: `{ chain_t tokens = {}; bool is_flag = true; bool boolean = true }`  
-(case-insensitive) values considered as booleans: `0`, `(integer != 0)`, `no`, `yes`, `n`, `y`
+(case-insensitive) values considered as booleans: `true`, `false`, `no`, `yes`, `n`, `y`
 
 # examples
 in commandline: 
-`--debug -p 192.168.0.2:1234` means `{ {"debug"}, true, true }, { {"p", "192.168.0.2:1234"}, true, true } `  
-`-dd /mount/disk.qcow2,cd-rom` means `{ {"dd", "/mount/disk.qcow2", "cd-rom"}, true, true }`
-`--debug 0 ./program` means `{ {"debug"}, true, false }, { {"program"}, false, true }`
+(clustering true) `--debug -p 192.168.0.2:1234` means `{ {"debug"}, true, true }, { {"p", "192.168.0.2:1234"}, true, true } `  
+(clustering false) `-dd /mount/disk.qcow2,cd-rom` means `{ {"dd", "/mount/disk.qcow2", "cd-rom"}, true, true }`
+(clustering true) `--debug false ./program` means `{ {"debug"}, true, false }, { {"program"}, false, true }`
 
 ```cpp
 #include <iostream>
 #include "cplusplus11.hpp"
 
-sign main(int, const char** argv) {
-    libargv::alias_t aliases = {
+signed main(int, const char** argv) {
+    libargv_t::alias_t aliases = {
         {"port", 'p'},
         {"mem", 'm'}
     };
 
-    libargv parser;
+    libargv_t parser;
     // argv, should surpress, should cluster, alias
     parser.init(argv, false, true, aliases);
 
 	// see what's inside
-    for (const libargv::arg_t& arg : parser.argvect) {
+    for (const libargv_t::arg_t& arg : parser.argvect) {
         if (arg.is_flag) {
             std::cout << "[FLAG] ";
             for (const std::string& token : arg.text) {
@@ -53,38 +53,59 @@ sign main(int, const char** argv) {
 
 ```c
 #include <stdio.h>
+#include <stdbool.h>
 #include "c11.h"
 
-signed main(int argc, const char** argv) {
-    // optionally define aliases e.g. --mem to -m
-    alias_t aliases[] = {
+signed main(int argc, const char **argv) {
+    // optionally define aliases, e.g. --mem to -m
+    libargv_alias_t aliases[] = {
         {"port", 'p'},
-        {"mem", 'm'}
+        {"mem", 'm'},
+        {"verbose", 'v'}
     };
+
     // you need to keep count
     size_t alias_count = sizeof(aliases) / sizeof(aliases[0]);
 
     // init the parser
-    libargv_parser parser;
-    // what, argc, argv, should surpress, should cluster, alias, alias count
-    libargv_init(&parser, argc, argv, false, true, aliases, alias_count);
+    libargv_t parser = {0};
+
+    // args, argc, argv, suppress invalid, cluster, aliases, alias count
+    if (!libargv_init(
+        &parser,
+        argc,
+        argv,
+        false,
+        true,
+        aliases,
+        alias_count
+    )) {
+        fprintf(stderr, "libargv failed.\n");
+        libargv_free(&parser);
+        return 1;
+    }
 
     // iterate to see what's inside
     for (size_t i = 0; i < parser.argvect.size; i++) {
-        arg_t* arg = (arg_t*)parser.argvect.data[i];
+        arg_t *arg = (arg_t *)parser.argvect.data[i];
 
         if (arg->is_flag) {
             printf("[FLAG] ");
+
             // print tokens
             for (size_t j = 0; j < arg->text.size; j++) {
-                printf("'%s' ", (char*)arg->text.data[j]);
+                printf("'%s' ", (char *)arg->text.data[j]);
             }
-            printf("| Boolean state: %s\n", arg->boolean ? "true" : "false");
+
+            printf("| Boolean state: %s\n",
+                   arg->boolean ? "true" : "false");
         } else {
             printf("[POSITIONAL / VALUE] ");
+
             for (size_t j = 0; j < arg->text.size; j++) {
-                printf("'%s' ", (char*)arg->text.data[j]);
+                printf("'%s' ", (char *)arg->text.data[j]);
             }
+
             printf("\n");
         }
     }

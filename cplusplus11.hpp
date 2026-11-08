@@ -25,7 +25,7 @@
 #include <utility>
 #include <cstdio>
 
-class libargv {
+class libargv_t {
     public:
         typedef std::unordered_map<std::string, char> alias_t;
         typedef std::vector<std::string> chain_t;
@@ -78,16 +78,16 @@ class libargv {
                 // purely positionals
                 if (strvect[i] == "-" || strvect[i] == "--") {
                     argvect.emplace_back(argtok(strvect[i]), false);
+                    pure_positional = true;
                     continue;
                 }
 
                 if (is_clustered) {
                     if (strvect[i][1] != '-') {
                         for (size_t x = 1; x < strvect[i].size(); x++) {
-                            if (strvect[i][x] == '-')
-                                found_hyphen(surpress_invalid, strvect[i]);
-                            std::string flag_str = "-" + std::string (1, strvect[i][x]);
-                            hold.text.push_back(flag_str);
+                            if (strvect[i][x] == '-') {
+                                found_hyphen(surpress_invalid, strvect[i]); }
+                       		hold.text.push_back(std::string (1, strvect[i][x]));
                         }
                         continue;
                     }
@@ -132,26 +132,12 @@ class libargv {
 				if (thing[i] >= 'A' && thing[i] <= 'Z')
 					thing[i] += 32;
 			
-			if (thing == "no" || thing == "n") {
+			if (thing == "no" || thing == "n" || thing == "false") {
 				hold.boolean = false;
 				return true; }
-			if (thing == "yes" || thing == "y") {
+			if (thing == "yes" || thing == "y" || thing == "true") {
 				hold.boolean = true;
 				return true; }
-
-			bool all_0s = true, is_int = true;
-           	for (size_t i = 0; i < thing.size(); i++) {
-           		if (thing[i] != '0')
-           			all_0s = false;
-           		if (thing[i] < '0' || thing[i] > '9')
-           			is_int = false;
-           	}
-           	if (all_0s) {
-           		hold.boolean = false;
-           		return true; }
-           	if (is_int) {
-           		hold.boolean = true;
-           		return true; }
            		
            	return false;
         }
