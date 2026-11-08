@@ -368,6 +368,7 @@ static inline void libargv_arg_clear(
 ) {
     libargv_chain_clear(&arg->text);
     arg->is_flag = true;
+    arg->boolean = true;
 }
 
 static inline void libargv_arg_free(
@@ -629,8 +630,7 @@ static inline bool libargv_init(
                         );
                     }
 
-                    char flag_str[3] = {
-                        '-',
+                    char flag_str[2] = {
                         current[x],
                         '\0'
                     };

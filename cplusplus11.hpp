@@ -39,12 +39,12 @@ class libargv_t {
             arg_t(chain_t _t, bool _i)
                 : text(std::move(_t)), is_flag(_i) {}
             bool is_empty() { return text.empty(); }
-            void clear() { text.clear(); is_flag = true; }
+            void clear() { text.clear(); is_flag = boolean = true; }
         };
 
         std::vector<arg_t> argvect;
 
-        void init(const char**& argv, bool surpress_invalid = false, bool is_clustered = true, alias_t user = {}) {
+        void init(const char *const argv[], bool surpress_invalid = false, bool is_clustered = true, alias_t user = {}) {
             argvect.clear();
             argvstr(argv);
             bool pure_positional = false;
@@ -121,7 +121,7 @@ class libargv_t {
             std::fprintf(stderr, "[libargv] WARNING: found '-' with is_clustered == true. Faulty flag: '%s'\n", text.c_str());
         }
 
-        void argvstr(const char**& argv) {
+        void argvstr(const char *const argv[]) {
             strvect.clear();
             for (int i = 0; argv[i] != 0; i++)
                 strvect.push_back(argv[i]);
